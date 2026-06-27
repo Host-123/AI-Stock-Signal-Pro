@@ -12,18 +12,8 @@ from app.services.stock_service import (
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    """
-    Application startup and shutdown events.
-    """
-
     test_connection()
-
     yield
-
-    # Future:
-    # Close database
-    # Stop background scheduler
-    # Release resources
 
 
 app = FastAPI(
@@ -32,10 +22,6 @@ app = FastAPI(
     version="2.0.0",
     lifespan=lifespan,
 )
-
-# ---------------------------------------------------------------------
-# CORS
-# ---------------------------------------------------------------------
 
 app.add_middleware(
     CORSMiddleware,
@@ -47,10 +33,6 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
-
-# ---------------------------------------------------------------------
-# Health
-# ---------------------------------------------------------------------
 
 
 @app.get("/", tags=["System"])
@@ -68,11 +50,6 @@ def health():
         "success": True,
         "message": "Server is healthy",
     }
-
-
-# ---------------------------------------------------------------------
-# Stock APIs
-# ---------------------------------------------------------------------
 
 
 @app.get("/api/stock/{symbol}", tags=["Stock"])
