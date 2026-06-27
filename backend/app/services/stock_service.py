@@ -1,36 +1,28 @@
 import yfinance as yf
-from ta.momentum import RSIIndicator
 
 from app.core.logger import logger
+from app.indicators.ema import calculate_ema
+from app.indicators.rsi import calculate_rsi
 
 
 def get_stock_price(symbol: str):
     """
-    Fetch stock data and calculate basic technical indicators.
+    Fetch stock data and calculate technical indicators.
     """
 
     try:
-        logger.info(f"Fetching stock data: {symbol}")
+
+        logger.info(f"Fetching market data: {symbol}")
 
         stock = yf.Ticker(symbol)
         history = stock.history(period="6mo")
 
         if history.empty:
-            logger.warning(f"No market data found for {symbol}")
             return {
                 "success": False,
                 "message": "Stock not found",
                 "data": None,
             }
-
-        # -----------------------------
-        # RSI
-        # -----------------------------
-
-        history["RSI"] = RSIIndicator(
-            close=history["Close"],
-            window=14,
-        ).rsi()
 
         latest = history.iloc[-1]
 
@@ -43,12 +35,16 @@ def get_stock_price(symbol: str):
         change = close_price - open_price
         change_percent = (change / open_price) * 100
 
-        rsi = round(float(latest["RSI"]), 2)
+        # -----------------------------
+        # Indicator Engine
+        # -----------------------------
+
+        rsi = calculate_rsi(history["Close"])
+        ema = calculate_ema(history["Close"])
 
         # -----------------------------
-        # Signal (Temporary RSI Logic)
-        # Phase 5-এ Professional Signal
-        # Engine আসবে।
+        # Temporary Signal Logic
+        # (Professional Engine আসবে Phase 5-এ)
         # -----------------------------
 
         signal = "HOLD"
@@ -74,7 +70,7 @@ def get_stock_price(symbol: str):
         elif signal == "SELL":
             exit_price = round(close_price, 2)
 
-        logger.info(f"{symbol} processed successfully")
+        logger.info(f"{symbol} analysis completed.")
 
         return {
             "success": True,
@@ -88,8 +84,15 @@ def get_stock_price(symbol: str):
                 "volume": volume,
                 "change": round(change, 2),
                 "change_percent": round(change_percent, 2),
+
                 "rsi": rsi,
+
+                "ema20": ema["ema20"],
+                "ema50": ema["ema50"],
+                "ema200": ema["ema200"],
+
                 "signal": signal,
+
                 "entry": entry,
                 "stop_loss": stop_loss,
                 "target1": target1,
@@ -99,6 +102,7 @@ def get_stock_price(symbol: str):
         }
 
     except Exception as e:
+
         logger.exception(e)
 
         return {
